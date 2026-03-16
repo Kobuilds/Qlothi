@@ -1,0 +1,313 @@
+.qlothi-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 9999;
+  background-color: #E60023; /* Pinterest Red */
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Helvetica, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", メイリオ, Meiryo, "ＭＳ Ｐゴシック", Arial, sans-serif;
+}
+
+.qlothi-btn:hover {
+  background-color: #ad081b;
+}
+
+.qlothi-overlay {
+  z-index: 1000;
+  /* Allow clicking through the empty space of the SVG to grab underlying images etc if needed, though pointer-events: none on the SVG itself handles this */
+}
+
+.qlothi-item {
+  fill: rgba(230, 0, 35, 0.0); /* Transparent by default */
+  stroke: rgba(230, 0, 35, 0.0);
+  stroke-width: 2px;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+  cursor: pointer;
+}
+
+.qlothi-item.hovered {
+  fill: rgba(230, 0, 35, 0.3); /* Pinterest Red with opacity */
+  stroke: rgba(230, 0, 35, 0.8);
+}
+
+.qlothi-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 100000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.qlothi-modal {
+  position: relative;
+  background: #fff;
+  padding: 24px;
+  border-radius: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.qlothi-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #efefef;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.2s;
+}
+
+.qlothi-modal-close:hover {
+  background: #e2e2e2;
+}
+
+.qlothi-modal-img-wrapper {
+  position: relative;
+  border-radius: 16px;
+  max-height: calc(90vh - 48px);
+  display: flex;
+  justify-content: center;
+}
+
+.qlothi-modal-img {
+  max-width: 100%;
+  max-height: calc(90vh - 48px);
+  object-fit: contain;
+  display: block;
+}
+
+/* Interactive Links Styles */
+.qlothi-link-group circle.qlothi-dot-start {
+  fill: #000;
+  stroke: none;
+  opacity: 0.8;
+  transition: opacity 0.2s, r 0.2s;
+}
+
+.qlothi-link-group circle.qlothi-dot-end {
+  fill: transparent;
+  stroke: #000;
+  stroke-width: 2px;
+  transition: stroke-width 0.2s, r 0.2s;
+}
+
+.qlothi-link-group line.qlothi-line {
+  stroke: #000;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  opacity: 0.8;
+  transition: opacity 0.2s, stroke-width 0.2s;
+}
+
+.qlothi-link-group.hovered circle.qlothi-dot-start {
+  r: 5;
+  opacity: 1;
+}
+
+.qlothi-link-group.hovered line.qlothi-line {
+  opacity: 1;
+  stroke-width: 3px;
+}
+
+.qlothi-link-group.hovered circle.qlothi-dot-end {
+  stroke-width: 3px;
+  r: 6;
+}
+
+.qlothi-shop-label {
+  position: absolute;
+  background: white;
+  color: #111;
+  border: 1px solid #111;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.qlothi-shop-label:hover {
+  background: #111;
+  color: white;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  transform: translateY(-50%) scale(1.02);
+}
+
+.qlothi-shop-label.hovered {
+  border-color: #E60023; /* highlight when the polygon is hovered */
+  color: #E60023;
+}
+
+.qlothi-shop-label.hovered:hover {
+  background: #E60023;
+  color: white;
+}
+
+.qlothi-icon {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Glassmorphism Shopping Modal */
+.qlothi-shop-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 32px;
+  padding: 32px;
+  width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  z-index: 100001;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.qlothi-shop-modal.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.qlothi-shop-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qlothi-shop-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.qlothi-shop-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.qlothi-shop-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qlothi-shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  text-decoration: none;
+  color: #111;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.qlothi-shop-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #E60023;
+}
+
+.qlothi-shop-item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 10px;
+  font-size: 18px;
+}
+
+.qlothi-shop-item-text {
+  flex: 1;
+  margin-left: 12px;
+}
+
+.qlothi-shop-arrow {
+  opacity: 0.3;
+  font-size: 14px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.qlothi-shop-item:hover .qlothi-shop-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+  color: #E60023;
+}
+
+/* Modal Close for Shop Modal */
+.qlothi-shop-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.qlothi-shop-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Blur effect for background when shop modal is open */
+.qlothi-modal-img-wrapper.blurred {
+  filter: blur(10px);
+  transition: filter 0.4s ease;
+}

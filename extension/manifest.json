@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Qlothi",
+  "version": "1.0",
+  "description": "Analyze outfits directly on Pinterest.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.pinterest.com/*",
+    "*://*.pinimg.com/*",
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*.pinterest.com/*"],
+      "css": ["styles.css"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Qlothi"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["results.html", "results.css", "results.js"],
+      "matches": ["*://*.pinterest.com/*"]
+    }
+  ]
+}

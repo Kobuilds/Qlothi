@@ -66,48 +66,65 @@ function injectButton() {
 function analyzeImage(imageUrl) {
   console.log("Preparing to send image to backend...");
   
-  // Find the button to update its text (optional UX detail)
   const pinBtns = document.querySelectorAll('.qlothi-btn');
   const btn = pinBtns.length > 0 ? pinBtns[pinBtns.length - 1] : null;
   const oldText = btn ? btn.innerHTML : '✨ Analyze Outfit';
-  if (btn) btn.innerHTML = '✨ Analyzing...';
+  
+  if (btn) btn.innerHTML = '✨ Analyzing: Fetching Image...';
 
-  // 1. Ask background script to fetch image to bypass CORS blocks on pinterest.com
-  chrome.runtime.sendMessage({ action: "downloadImage", url: imageUrl }, (response) => {
+  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ success: false, error: 'Timeout waiting for background proxy.' }), 15000));
+
+  Promise.race([
+    new Promise(resolve => chrome.runtime.sendMessage({ action: "downloadImage", url: imageUrl }, resolve)),
+    timeoutPromise
+  ]).then((response) => {
+    if (chrome.runtime.lastError) {
+      alert("Extension Error: " + chrome.runtime.lastError.message);
+      if (btn) btn.innerHTML = oldText;
+      return;
+    }
+
     if (!response || !response.success) {
       console.error("Failed to fetch image data via background:", response ? response.error : 'Unknown error');
-      alert("Error: Could not read image data. Check console for details.");
+      alert("Error: Could not read image data. " + (response ? response.error : ''));
       if (btn) btn.innerHTML = oldText;
       return;
     }
 
     const base64data = response.base64_image;
-    console.log("Image loaded and converted to Base64 via background script. Sending to backend...");
+    if (btn) btn.innerHTML = '✨ Analyzing: Hitting Server...';
 
-    // 2. Send Base64 to our local Python backend
-    fetch('http://127.0.0.1:8000/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ base64_image: base64data }),
-    })
-    .then(res => res.json())
-    .then(data => {
-      console.log("Backend response:", data);
-      if (btn) btn.innerHTML = oldText; // Reset button
-      
+    return Promise.race([
+      new Promise(resolve => chrome.runtime.sendMessage({ action: "analyzeOutfit", base64_image: base64data }, resolve)),
+      timeoutPromise
+    ]);
+  }).then((res) => {
+    if (!res) return; // Handled by first block if aborted
+    
+    if (chrome.runtime.lastError) {
+      alert("Extension Error talking to backend proxy: " + chrome.runtime.lastError.message);
+      if (btn) btn.innerHTML = oldText;
+      return;
+    }
+    
+    console.log("Backend proxy response:", res);
+    if (btn) btn.innerHTML = oldText;
+    
+    if (res.success) {
+      const data = res.data;
       if (data.status === 'success' && data.items && data.items.length > 0) {
         createModal(data.items, imageUrl);
       } else {
         alert("No garments detected by Qlothi AI.");
       }
-    })
-    .catch(err => {
-      console.error("Error connecting to backend:", err);
-      alert("Error connecting to Qlothi Backend.");
-      if (btn) btn.innerHTML = oldText; // Reset button
-    });
+    } else {
+      console.error("Error connecting to backend proxy:", res.error);
+      alert("Error connecting to Qlothi Backend. Make sure Python server is running.");
+    }
+  }).catch(err => {
+    console.error("Critical error in analyze promise chain:", err);
+    alert("Critical failure: " + err.message);
+    if (btn) btn.innerHTML = oldText;
   });
 }
 
@@ -341,17 +358,34 @@ function createModal(items, imageUrl) {
       label.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const resultsUrl = chrome.runtime.getURL(`results.html?item=${encodeURIComponent(displayClass)}&img=${encodeURIComponent(imageUrl)}`);
-        window.open(resultsUrl, '_blank');
+        chrome.storage.local.set({
+          qlothi_current_search: {
+            item: displayClass,
+            img: imageUrl,
+            bbox: item.bbox_normalized
+          }
+        }, () => {
+          const resultsUrl = chrome.runtime.getURL('results.html');
+          window.open(resultsUrl, '_blank');
+        });
       });
 
       // Select specific item via polygon
       polygon.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const resultsUrl = chrome.runtime.getURL(`results.html?item=${encodeURIComponent(displayClass)}&img=${encodeURIComponent(imageUrl)}`);
-        window.open(resultsUrl, '_blank');
+        chrome.storage.local.set({
+          qlothi_current_search: {
+            item: displayClass,
+            img: imageUrl,
+            bbox: item.bbox_normalized
+          }
+        }, () => {
+          const resultsUrl = chrome.runtime.getURL('results.html');
+          window.open(resultsUrl, '_blank');
+        });
       });
+
 
       // Hover interactions
       const elementsToHover = [polygon, lineGroup, label];

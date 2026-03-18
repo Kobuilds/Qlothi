@@ -1,26 +1,49 @@
 .qlothi-btn {
-  position: absolute;
-  top: 16px;
-  left: 16px;
+  position: static;
+  margin-right: 8px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   z-index: 9999;
-  background-color: #E60023; /* Pinterest Red */
+  background: linear-gradient(135deg, #FF0050 0%, #BA1D4A 100%);
   color: white;
   border: none;
   border-radius: 24px;
-  padding: 10px 16px;
+  padding: 0 20px;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Helvetica, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", メイリオ, Meiryo, "ＭＳ Ｐゴシック", Arial, sans-serif;
+  box-shadow: 0 4px 15px rgba(230, 0, 35, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .qlothi-btn:hover {
-  background-color: #ad081b;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(230, 0, 35, 0.4);
+  background: linear-gradient(135deg, #ff1a66 0%, #d12154 100%);
+}
+
+.qlothi-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.qlothi-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .qlothi-overlay {

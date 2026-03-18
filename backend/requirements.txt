@@ -5,3 +5,5 @@ ultralytics
 requests
 opencv-python
 pillow
+playwright
+beautifulsoup4

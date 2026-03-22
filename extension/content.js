@@ -45,7 +45,11 @@ function injectButton() {
       const computedBtn = window.getComputedStyle(saveBtn);
       btn.style.height = computedBtn.height || '48px';
       btn.style.borderRadius = computedBtn.borderRadius || '24px';
-      btn.style.padding = computedBtn.padding;
+      btn.style.paddingLeft = computedBtn.paddingLeft || '16px';
+      btn.style.paddingRight = computedBtn.paddingRight || '16px';
+      btn.style.paddingTop = computedBtn.paddingTop || '0px';
+      btn.style.paddingBottom = computedBtn.paddingBottom || '0px';
+      btn.style.minWidth = '60px'; // Fallback to prevent crushing
       btn.style.display = 'inline-flex';
       
       // Get the container that holds the save button

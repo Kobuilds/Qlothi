@@ -3,7 +3,7 @@ uvicorn
 pydantic
 ultralytics
 requests
-opencv-python
+opencv-python-headless
 pillow
 playwright
 beautifulsoup4

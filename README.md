@@ -104,6 +104,3 @@ Because the backend uses a heavy AI classification model (`Segformer`), it requi
 4. Click **New Item**, upload the Zip, fill out your store listing details, and click **Submit for Review**.
 
 ---
-
-## ⚖️ License
-MIT License. Created with ❤️ for fashion enthusiasts.

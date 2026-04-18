@@ -1,10 +1,7 @@
 fastapi
 uvicorn
 pydantic
-ultralytics
 requests
 opencv-python-headless
 pillow
-playwright
-beautifulsoup4
 transformers

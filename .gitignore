@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Packaged extension builds
+qlothi-extension-v1.zip
+*.crx
+
+# Playwright / Lens scraping debug artifacts (no longer written, kept as a guard)
+backend/debug_google*.html
+backend/debug_google*.png
+backend/test_google.jpg
+
+# OS / editor cruft
+.DS_Store
+.vscode/
+.idea/
+.env
+
+# Claude Code local config
+.claude/

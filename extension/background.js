@@ -52,15 +52,17 @@ async function performOptimizedLensSearch(base64Image) {
       func: async (b64) => {
         return new Promise((resolve) => {
           let attempts = 0;
+          let cameraClicked = false;
+          
           const uploader = setInterval(async () => {
             attempts++;
-            if (attempts > 50) {
+            if (attempts > 150) { // 15 seconds max patience
               clearInterval(uploader);
-              resolve({ success: false, reason: 'timeout' });
+              resolve({ success: false, reason: 'timeout waiting for camera/file input' });
               return;
             }
 
-            // Find file inputs instantly
+            // Phase 1: Wait for file inputs to exist in the DOM
             const fileInputs = document.querySelectorAll('input[type="file"]');
             if (fileInputs.length > 0) {
               clearInterval(uploader);
@@ -69,35 +71,55 @@ async function performOptimizedLensSearch(base64Image) {
                 const res = await fetch(b64);
                 const blob = await res.blob();
                 const file = new File([blob], 'search.jpg', { type: 'image/jpeg' });
+                
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 fileInput.files = dt.files;
                 
-                // Trigger upload instantly
+                // Trigger upload
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                 fileInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                // Also try to click the camera button if input event fails
-                const cameraBtn = document.querySelector('div[role="button"][aria-label*="image"], svg[aria-label*="Camera"]');
-                if (cameraBtn) cameraBtn.click();
                 
                 resolve({ success: true });
               } catch (e) {
                 resolve({ success: false, reason: e.toString() });
               }
             } else {
-               // Try forcing the camera button to appear
-               const cameraBtn = document.querySelector('div[role="button"][aria-label*="image"], svg[aria-label*="Camera"], [data-tooltip*="image"]');
-               if (cameraBtn) cameraBtn.click();
+               // Phase 2: Open the camera menu to spawn the file input
+               if (!cameraClicked) {
+                   const selectors = [
+                     'div[role="button"][aria-label="Search by image"]',
+                     'div[aria-label="Search by image"]',
+                     '[data-tooltip="Search by image"]',
+                     'svg[aria-label="Camera search"]'
+                   ];
+                   let clickSuccess = false;
+                   for (const sel of selectors) {
+                     const btn = document.querySelector(sel);
+                     if (btn) { btn.click(); clickSuccess = true; break; }
+                   }
+                   if (!clickSuccess) {
+                       const allBtns = document.querySelectorAll('div[role="button"]');
+                       for (const b of allBtns) {
+                         if (b.getAttribute('aria-label')?.toLowerCase().includes('image') || 
+                             b.getAttribute('aria-label')?.toLowerCase().includes('camera')) {
+                           b.click(); clickSuccess = true; break;
+                         }
+                       }
+                   }
+                   if (clickSuccess) {
+                       cameraClicked = true;
+                   }
+               }
             }
-          }, 100); // Check every 100ms! (10x faster than before)
+          }, 100); 
         });
       },
       args: [base64Image]
     });
 
     if (!uploadResult?.[0]?.result?.success) {
-        throw new Error("Failed to heavily inject image.");
+        throw new Error("Failed to inject image into Google: " + uploadResult?.[0]?.result?.reason);
     }
 
     console.log("[Qlothi] Waiting for Lens navigation...");

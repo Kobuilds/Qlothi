@@ -60,15 +60,6 @@ MIN_AREA_PCT_SMALL = 0.001
 # Contours smaller than this fraction of the largest contour for the same class are treated as fragments.
 CONTOUR_KEEP_RATIO = 0.15
 
-# Classes where the model routinely glues a top and a skirt into one region (or one drape-plus-skirt region).
-# For these we try a vertical color split before emitting items.
-SPLIT_CANDIDATE_CLASSES = {4, 5, 7}  # upper-clothes, skirt, dress
-COLOR_SPLIT_MIN_AREA_PX = 2000     # don't bother on tiny regions
-COLOR_SPLIT_KMEANS_SAMPLE = 10000  # cap clustering work on big masks
-COLOR_DIST_MIN = 45                # RGB Euclidean below this = too similar to be two garments
-MIN_CLUSTER_FRAC = 0.20            # each cluster must be ≥ this fraction of the region
-VERTICAL_SEP_MIN = 1.0             # cluster-centroid y-gap vs. summed y-stddevs; < 1 = too overlapped
-
 
 def _build_class_mask(seg_map: np.ndarray, class_id: int) -> np.ndarray:
     if class_id == FOOTWEAR_CLASS:
@@ -90,76 +81,14 @@ def _class_confidence(probs: np.ndarray, low_res_seg: np.ndarray, class_id: int)
     return float(probs[class_id][mask].mean())
 
 
-def _try_vertical_color_split(cleaned_mask: np.ndarray, image_rgb: np.ndarray):
-    """
-    If the masked region contains two distinct colors stacked vertically
-    (e.g. lavender top above a blue floral skirt both glued into one
-    class), return (upper_mask, lower_mask). Otherwise return None.
-
-    The checks are deliberately strict to avoid splitting single garments
-    that just happen to have pattern variation or a belt.
-    """
-    mask_bool = cleaned_mask > 0
-    n_pixels = int(mask_bool.sum())
-    if n_pixels < COLOR_SPLIT_MIN_AREA_PX:
-        return None
-
-    coords = np.column_stack(np.where(mask_bool))  # (N, 2): [row, col]
-    pixels = image_rgb[mask_bool].astype(np.float32)
-
-    # Subsample for k-means so latency stays bounded on large masks.
-    if n_pixels > COLOR_SPLIT_KMEANS_SAMPLE:
-        idx = np.random.default_rng(0).choice(n_pixels, COLOR_SPLIT_KMEANS_SAMPLE, replace=False)
-        sample = pixels[idx]
-    else:
-        sample = pixels
-
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
-    _, _, centers = cv2.kmeans(sample, 2, None, criteria, 3, cv2.KMEANS_PP_CENTERS)
-
-    # Reject when the two "clusters" are really the same color with noise.
-    if np.linalg.norm(centers[0] - centers[1]) < COLOR_DIST_MIN:
-        return None
-
-    # Assign every masked pixel to its nearest center.
-    dist0 = np.linalg.norm(pixels - centers[0], axis=1)
-    dist1 = np.linalg.norm(pixels - centers[1], axis=1)
-    labels = (dist1 < dist0).astype(np.int32)
-
-    c0_count = int((labels == 0).sum())
-    c1_count = int((labels == 1).sum())
-    if min(c0_count, c1_count) < MIN_CLUSTER_FRAC * n_pixels:
-        return None  # one color dominates — probably a single patterned garment
-
-    y0 = coords[labels == 0, 0]
-    y1 = coords[labels == 1, 0]
-    y_gap = abs(float(y0.mean()) - float(y1.mean()))
-    y_spread = float(y0.std()) + float(y1.std())
-    if y_spread == 0 or (y_gap / y_spread) < VERTICAL_SEP_MIN:
-        return None  # colors interleave vertically → pattern, not two stacked garments
-
-    upper_label = 0 if y0.mean() < y1.mean() else 1
-
-    upper_mask = np.zeros_like(cleaned_mask)
-    lower_mask = np.zeros_like(cleaned_mask)
-    upper_coords = coords[labels == upper_label]
-    lower_coords = coords[labels != upper_label]
-    upper_mask[upper_coords[:, 0], upper_coords[:, 1]] = 255
-    lower_mask[lower_coords[:, 0], lower_coords[:, 1]] = 255
-
-    # Clean up the halves — kmeans-on-pixels produces noisy edges.
+def _extract_items(class_mask: np.ndarray, class_id: int, width: int, height: int, confidence: float):
+    """Clean the mask morphologically, then emit one item per significant contour."""
+    # Open removes speckles, close fills pinholes (e.g. skin peeking through a blouse).
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    upper_mask = cv2.morphologyEx(upper_mask, cv2.MORPH_OPEN, kernel)
-    upper_mask = cv2.morphologyEx(upper_mask, cv2.MORPH_CLOSE, kernel)
-    lower_mask = cv2.morphologyEx(lower_mask, cv2.MORPH_OPEN, kernel)
-    lower_mask = cv2.morphologyEx(lower_mask, cv2.MORPH_CLOSE, kernel)
+    cleaned = cv2.morphologyEx(class_mask, cv2.MORPH_OPEN, kernel, iterations=1)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    return upper_mask, lower_mask
-
-
-def _contours_to_items(cleaned_mask: np.ndarray, class_id: int, width: int, height: int,
-                       confidence: float, id_suffix: str = ""):
-    contours, _ = cv2.findContours(cleaned_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return []
 
@@ -185,7 +114,7 @@ def _contours_to_items(cleaned_mask: np.ndarray, class_id: int, width: int, heig
         bbox = [min(px), min(py), max(px), max(py)]
 
         items.append({
-            "id": f"item_{class_id}_{id_suffix}{idx}",
+            "id": f"item_{class_id}_{idx}",
             "class_name": FRIENDLY_NAMES.get(class_id, LABEL_MAP.get(class_id, "Item")),
             "confidence": round(confidence, 3),
             "polygon_normalized": polygon,
@@ -193,30 +122,6 @@ def _contours_to_items(cleaned_mask: np.ndarray, class_id: int, width: int, heig
             "area_pct": round(area / (width * height), 4),
         })
     return items
-
-
-def _extract_items(class_mask: np.ndarray, class_id: int, width: int, height: int,
-                   confidence: float, image_rgb: np.ndarray):
-    """Clean the mask morphologically, then emit one item per significant contour.
-
-    For classes that frequently glue top+skirt together, first try to split the
-    region by dominant color before contour extraction.
-    """
-    # Open removes speckles, close fills pinholes (e.g. skin peeking through a blouse).
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    cleaned = cv2.morphologyEx(class_mask, cv2.MORPH_OPEN, kernel, iterations=1)
-    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    if class_id in SPLIT_CANDIDATE_CLASSES:
-        split = _try_vertical_color_split(cleaned, image_rgb)
-        if split is not None:
-            upper_mask, lower_mask = split
-            return (
-                _contours_to_items(upper_mask, class_id, width, height, confidence, id_suffix="u")
-                + _contours_to_items(lower_mask, class_id, width, height, confidence, id_suffix="l")
-            )
-
-    return _contours_to_items(cleaned, class_id, width, height, confidence)
 
 
 class AnalyzeRequest(BaseModel):
@@ -235,7 +140,6 @@ async def analyze_outfit(request: AnalyzeRequest):
         image_bytes = base64.b64decode(base64_data)
         img = Image.open(BytesIO(image_bytes)).convert("RGB")
         width, height = img.size
-        image_rgb = np.array(img)
         print(f"Image opened: {width}x{height}")
 
         print("Running fashion segmentation...")
@@ -262,7 +166,7 @@ async def analyze_outfit(request: AnalyzeRequest):
             if confidence == 0.0:
                 continue
             class_mask = _build_class_mask(seg_map, class_id)
-            items.extend(_extract_items(class_mask, class_id, width, height, confidence, image_rgb))
+            items.extend(_extract_items(class_mask, class_id, width, height, confidence))
 
         print(f"Successfully extracted {len(items)} clothing items.")
         return {

@@ -12,6 +12,7 @@
   "host_permissions": [
     "*://*.pinterest.com/*",
     "*://*.pinimg.com/*",
+    "*://*.hf.space/*",
     "*://*.google.com/*",
     "*://lens.google.com/*",
     "http://127.0.0.1:8000/*",

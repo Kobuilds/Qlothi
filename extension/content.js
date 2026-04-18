@@ -360,6 +360,7 @@ function createModal(items, imageUrl) {
       
       const displayClass = item.class_name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       label.title = `Shop ${displayClass}`;
+      label.setAttribute("data-class", item.class_name);
       
       label.style.position = 'absolute';
       label.style.top = `${dy}px`;

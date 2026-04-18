@@ -47,17 +47,35 @@
 }
 
 .qlothi-item {
-  fill: rgba(128, 128, 128, 0.0); /* Transparent by default */
-  stroke: rgba(128, 128, 128, 0.8); /* Grey */
+  /* Default color (fallback) */
+  --item-color: 230, 0, 35; 
+  
+  fill: rgba(var(--item-color), 0.0);
+  stroke: rgba(var(--item-color), 0.8);
   stroke-width: 2px;
-  stroke-dasharray: 5 5; /* Dotted line effect */
+  stroke-dasharray: 5 5;
   transition: fill 0.2s ease, stroke 0.2s ease;
   cursor: pointer;
 }
 
+/* Color Palette Mappings */
+.qlothi-item[data-class="Hat"] { --item-color: 255, 107, 107; }
+.qlothi-item[data-class="Sunglasses"] { --item-color: 78, 205, 196; }
+.qlothi-item[data-class="Top / Upper Wear"],
+.qlothi-item[data-class="upper-clothes"] { --item-color: 165, 148, 249; }
+.qlothi-item[data-class="Skirt"] { --item-color: 255, 159, 28; }
+.qlothi-item[data-class="Pants"] { --item-color: 69, 123, 157; }
+.qlothi-item[data-class="Dress"] { --item-color: 242, 95, 92; }
+.qlothi-item[data-class="Belt"] { --item-color: 112, 193, 179; }
+.qlothi-item[data-class="Footwear"],
+.qlothi-item[data-class*="shoe"] { --item-color: 36, 123, 160; }
+.qlothi-item[data-class="Bag"] { --item-color: 80, 81, 79; }
+.qlothi-item[data-class="Scarf / Accessory"],
+.qlothi-item[data-class="scarf"] { --item-color: 255, 230, 109; }
+
 .qlothi-item.hovered {
-  fill: rgba(128, 128, 128, 0.3); /* Grey tinted fill */
-  stroke: rgba(128, 128, 128, 1); /* Solid grey stroke */
+  fill: rgba(var(--item-color), 0.3);
+  stroke: rgba(var(--item-color), 1);
   stroke-dasharray: 5 5;
 }
 
@@ -160,9 +178,12 @@
 }
 
 .qlothi-shop-circle {
+  /* Default color (fallback) */
+  --item-color: 136, 136, 136; 
+
   position: absolute;
   background: white;
-  border: 3px solid #888;
+  border: 3px solid rgba(var(--item-color), 1);
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -176,11 +197,26 @@
   padding: 0;
 }
 
+/* Multi-color support for shop circles */
+.qlothi-shop-circle[data-class="Hat"] { --item-color: 255, 107, 107; }
+.qlothi-shop-circle[data-class="Sunglasses"] { --item-color: 78, 205, 196; }
+.qlothi-shop-circle[data-class="Top / Upper Wear"],
+.qlothi-shop-circle[data-class="upper-clothes"] { --item-color: 165, 148, 249; }
+.qlothi-shop-circle[data-class="Skirt"] { --item-color: 255, 159, 28; }
+.qlothi-shop-circle[data-class="Pants"] { --item-color: 69, 123, 157; }
+.qlothi-shop-circle[data-class="Dress"] { --item-color: 242, 95, 92; }
+.qlothi-shop-circle[data-class="Belt"] { --item-color: 112, 193, 179; }
+.qlothi-shop-circle[data-class="Footwear"],
+.qlothi-shop-circle[data-class*="shoe"] { --item-color: 36, 123, 160; }
+.qlothi-shop-circle[data-class="Bag"] { --item-color: 80, 81, 79; }
+.qlothi-shop-circle[data-class="Scarf / Accessory"],
+.qlothi-shop-circle[data-class="scarf"] { --item-color: 255, 230, 109; }
+
 .qlothi-shop-circle::after {
   content: '';
   width: 8px;
   height: 8px;
-  background: #888;
+  background: rgba(var(--item-color), 1);
   border-radius: 50%;
   transition: background 0.2s ease;
 }

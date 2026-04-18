@@ -2,6 +2,8 @@ fastapi
 uvicorn
 pydantic
 requests
+requests-toolbelt
+beautifulsoup4
 opencv-python-headless
 pillow
 transformers
